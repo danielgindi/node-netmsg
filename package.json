@@ -1,0 +1,28 @@
+{
+  "name": "netmsg",
+  "version": "1.0.0",
+  "description": "Simple message transfer over network between Node.js, with Buffer and file support",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/danielgindi/node-netmsg"
+  },
+  "keywords": [
+    "network",
+    "messaging",
+    "communication",
+    "rpc"
+  ],
+  "author": "Daniel Cohen Gindi <danielgindi@gmail.com> (https://github.com/danielgindi)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/danielgindi/node-netmsg/issues"
+  },
+  "homepage": "https://github.com/danielgindi/node-netmsg",
+  "dependencies": {
+    "tmp": "0.0.28"
+  }
+}
