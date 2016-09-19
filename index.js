@@ -481,6 +481,19 @@ Netmsg.prototype._tryReleaseOutgoingMessageQueue = function (socket) {
  * @returns {Netmsg}
  */
 Netmsg.prototype.sendMessage = function (message, files) {
+    return this.sendMessageTo(null, message, files);
+};
+
+
+//noinspection JSUnusedGlobalSymbols
+/**
+ * Send a message to the other side
+ * @param {Socket?} socket The socket to send to, if you want to respond to a specific peer. Null to send to all.
+ * @param {Object} message The message to send. A message can contain `Buffer` objects.
+ * @param {Object<String, {name,path}>?} files A map of files to send.
+ * @returns {Netmsg}
+ */
+Netmsg.prototype.sendMessageTo = function (socket, message, files) {
     var that = this;
 
     var i, buffersArray = [], filesArray = [];
@@ -509,9 +522,9 @@ Netmsg.prototype.sendMessage = function (message, files) {
         }
     }
 
-    for (i = 0; i < that._sockets.length; i++) {
+    if (socket) {
         that._queueOutgoingMessage(
-            that._sockets[i],
+            socket,
             {
                 'message': message,
                 'binaries': binaries
@@ -519,6 +532,18 @@ Netmsg.prototype.sendMessage = function (message, files) {
             buffersArray,
             filesArray
         );
+    } else {
+        for (i = 0; i < that._sockets.length; i++) {
+            that._queueOutgoingMessage(
+                that._sockets[i],
+                {
+                    'message': message,
+                    'binaries': binaries
+                },
+                buffersArray,
+                filesArray
+            );
+        }
     }
 
     return that;

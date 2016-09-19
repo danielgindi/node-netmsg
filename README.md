@@ -50,6 +50,7 @@ client.on('message', function (event) {
 
 * The constructor takes no arguments.
 * Call `sendMessage(message, files)` to send a message
+* Call `sendMessageTo(socket, message, files)` to send a message to a specific peer
 * Call `listen(options)` to start a server
 * Call `connect(options)` to connect to a server
 * Call `stopListeningOnSocket(socket)` to remove a specific socket from this instance
