@@ -41,7 +41,7 @@ var copyMessageExtractingBuffers = function (message, parentKey, buffers) {
                 key: (parentKey != null ? parentKey + '.' : '') + key.replace(/\\/g, '\\\\').replace(/\./g, '\\.')
                 , buffer: val
             });
-        } else if (Array.isArray(val) || typeof val === 'object') {
+        } else if (val && (Array.isArray(val) || typeof val === 'object')) {
             out[key] = copyMessageExtractingBuffers(
                 val,
                 (parentKey != null ? parentKey + '.' : '') + key.replace(/\\/g, '\\\\').replace(/\./g, '\\.'),
