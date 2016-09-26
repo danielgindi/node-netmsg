@@ -168,7 +168,7 @@ Netmsg.prototype._processData = function (socket, data) {
 
                     message = JSON.parse(messageSlice.toString());
 
-                    if (message['binaries']) {
+                    if (message['binaries'] && message['binaries'].length) {
                         // We have binaries to wait for
                         msgdata.pendingMessage = message;
                         message.holdingUntilSend = message['binaries'].length;
@@ -527,7 +527,7 @@ Netmsg.prototype.sendMessageTo = function (socket, message, files) {
             socket,
             {
                 'message': message,
-                'binaries': binaries
+                'binaries': binaries.length ? binaries : false
             },
             buffersArray,
             filesArray
@@ -538,7 +538,7 @@ Netmsg.prototype.sendMessageTo = function (socket, message, files) {
                 that._sockets[i],
                 {
                     'message': message,
-                    'binaries': binaries
+                    'binaries': binaries ? binaries : false
                 },
                 buffersArray,
                 filesArray
