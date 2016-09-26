@@ -408,7 +408,7 @@ Netmsg.prototype._tryReleaseOutgoingMessageQueue = function (socket) {
 
                     if (fileLength <= 0) return;
 
-                    var stream = msgdata.pendingOutgoingStream =
+                    var stream = message.pendingOutgoingStream =
                         Fs
                             .createReadStream(filePath)
                             .on('data', function (data) {
@@ -424,8 +424,8 @@ Netmsg.prototype._tryReleaseOutgoingMessageQueue = function (socket) {
                             })
                             .on('end', function () {
                                 message.holdingUntilSendComplete--;
-                                delete msgdata.pendingOutgoingStream;
-                                delete msgdata.pendingOutgoingFile;
+                                delete message.pendingOutgoingStream;
+                                delete message.pendingOutgoingFile;
                                 //noinspection JSAccessibilityCheck
                                 that._tryReleaseOutgoingMessageQueue(socket);
                             });
