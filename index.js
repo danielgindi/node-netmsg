@@ -566,6 +566,11 @@ Netmsg.prototype.listen = function (options) {
         that.listenOnSocket(socket);
 
         that.emit('connect', socket);
+    })
+
+    server.on('error', function (err) {
+        // Forward errors
+        that.emit('error', err);
     });
 
     that._listenerServers.push(server);
@@ -632,6 +637,7 @@ Netmsg.prototype.listenOnSocket = function (socket) {
  * @param {Number=4} options.family Version of IP stack. Defaults to 4.
  * @param {Number=0} options.hints `dns.lookup()` hints. Defaults to 0.
  * @param {Function?} options.lookup Custom lookup function. Defaults to `dns.lookup`.
+ * @param {Number=0} options.retry How many times to retry when encountering EHOSTUNREACH.
  * @returns {Netmsg}
  */
 Netmsg.prototype.connect = function (options) {
@@ -640,22 +646,41 @@ Netmsg.prototype.connect = function (options) {
 
     var socket = new Net.Socket({ allowHalfOpen: true });
 
-    socket.connect(options, function (err) {
-        if (err) {
+    var retryCount = options.retry || 0;
+
+    socket
+        .on('error', function (err) {
+            if (err.code === 'EHOSTUNREACH') {
+                if (retryCount) {
+                    retryCount--;
+                    socket.connect(options);
+                    return;
+                }
+                
+                // No retry, remove listeners here
+                socket.removeAllListeners();
+            }
+
+            // Forward errors
             that.emit('error', err);
-            return;
-        }
+        })
+        .on('connect', function (err) {
+            if (err) {
+                that.emit('error', err);
+                return;
+            }
 
-        if (that._clientSocket) {
-            that._clientSocket.destroy();
-            that.stopListeningOnSocket(that._clientSocket);
-        }
+            if (that._clientSocket) {
+                that._clientSocket.destroy();
+                that.stopListeningOnSocket(that._clientSocket);
+            }
 
-        that._clientSocket = socket;
-        that.listenOnSocket(socket);
+            that._clientSocket = socket;
+            that.listenOnSocket(socket);
 
-        that.emit('connect', socket);
-    });
+            that.emit('connect', socket);
+        })
+        .connect(options);
 
     return that;
 };
