@@ -405,7 +405,6 @@ Netmsg.prototype._tryReleaseOutgoingMessageQueue = function (socket) {
                     var lengthBuffer = new Buffer(4);
                     lengthBuffer.writeUInt32LE(fileLength, 0);
                     socket.write(lengthBuffer);
-
                     if (fileLength <= 0) return;
 
                     var stream = message.pendingOutgoingStream =
@@ -637,50 +636,137 @@ Netmsg.prototype.listenOnSocket = function (socket) {
  * @param {Number=4} options.family Version of IP stack. Defaults to 4.
  * @param {Number=0} options.hints `dns.lookup()` hints. Defaults to 0.
  * @param {Function?} options.lookup Custom lookup function. Defaults to `dns.lookup`.
- * @param {Number=0} options.retry How many times to retry when encountering EHOSTUNREACH.
+ * @param {Number?} options.timeout Will cancel the `connect` if `timeout` has passed and `connect` was not fired.
+ * @param {Number?} options.totalTimeout Will stop any connection/retry attempt after specified timeout.
+ * @param {Number=0} options.retry How many times to retry when encountering EHOSTUNREACH or ETIMEOUT.
+ * @param {Boolean=true} options.noDelay Disables the Nagle algorithm.
  * @returns {Netmsg}
  */
 Netmsg.prototype.connect = function (options) {
 
     var that = this;
 
-    var socket = new Net.Socket({ allowHalfOpen: true });
+    var socket = null;
 
     var retryCount = options.retry || 0;
 
-    socket
-        .on('error', function (err) {
-            if (err.code === 'EHOSTUNREACH') {
-                if (retryCount) {
-                    retryCount--;
-                    socket.connect(options);
-                    return;
-                }
-                
-                // No retry, remove listeners here
-                socket.removeAllListeners();
-            }
+    var timeoutMs = 
+        (options.timeout && isFinite(options.timeout) && options.timeout > 0) 
+        ? options.timeout 
+        : 0;
+    var totalTimeoutMs = 
+        (options.totalTimeout && isFinite(options.totalTimeout) && options.totalTimeout > 0) 
+        ? options.totalTimeout 
+        : 0;
+    
+    var timeout = null;
 
-            // Forward errors
-            that.emit('error', err);
-        })
-        .on('connect', function (err) {
-            if (err) {
-                that.emit('error', err);
+    // Abort any previous `connect` operation
+    if (that._connectingSocket) {
+        var error = new Error();
+        error.code = 'ECANCELED';
+        that._connectingSocket.destroy(error);
+        delete that._connectingSocket;
+    }
+
+    var connect = function () {
+        if (timeoutMs) {
+            timeout = setTimeout(function () {
+                timeout = null;
+                if (socket.connecting) {
+                    var error = new Error();
+                    error.code = 'ETIMEOUT';
+                    socket.destroy(error); // This emits both ETIMEOUT and ECANCELED
+                }
+            }, timeoutMs);
+        }
+
+        socket = new Net.Socket({ allowHalfOpen: true })
+            .on('error', onError)
+            .on('connect', onConnect);
+
+        var noDelay = options.noDelay === undefined ? true : options.noDelay;
+        socket.setNoDelay(!!noDelay);
+
+        socket.connect(options);
+
+        that._connectingSocket = socket;
+    };
+
+    var onError = function (err) {
+        if (err && err.code === 'ECANCELED') return;
+
+        if (timeout) {
+            clearTimeout(timeout);
+            timeout = null;
+        }
+        if (totalTimeout) {
+            clearTimeout(totalTimeout);
+            totalTimeout = null;
+        }
+        
+        if (err.code === 'EHOSTUNREACH' || err.code === 'ETIMEOUT') {
+            if (retryCount) {
+                retryCount--;
+                connect();
                 return;
             }
+            
+            // No retry, remove listeners here
+            socket.removeAllListeners();
 
-            if (that._clientSocket) {
-                that._clientSocket.destroy();
-                that.stopListeningOnSocket(that._clientSocket);
+            // Forward errors
+            that.emit('retryerror', err);
+
+            return;
+        }
+
+        // Forward errors
+        that.emit('error', err);
+    };
+
+    var onConnect = function (err) {
+
+        if (timeout) {
+            clearTimeout(timeout);
+            timeout = null;
+        }
+        if (totalTimeout) {
+            clearTimeout(totalTimeout);
+            totalTimeout = null;
+        }
+
+        if (err) {
+            that.emit('error', err);
+            return;
+        }
+
+        if (that._clientSocket) {
+            that._clientSocket.destroy();
+            that.stopListeningOnSocket(that._clientSocket);
+        }
+
+        delete that._connectingSocket;
+        that._clientSocket = socket;
+        that.listenOnSocket(socket);
+
+        that.emit('connect', socket);
+    };
+
+    // Start connection attempt
+    connect();
+
+    // Set global timeout
+    if (totalTimeoutMs) {
+        var totalTimeout = setTimeout(function () {
+            retryCount = 0;
+            if (socket.connecting) {
+                var error = new Error();
+                error.code = 'ETIMEOUT';
+                socket.destroy(error); // This emits both ETIMEOUT and ECANCELED
             }
-
-            that._clientSocket = socket;
-            that.listenOnSocket(socket);
-
-            that.emit('connect', socket);
-        })
-        .connect(options);
+        }, totalTimeoutMs);
+    }
 
     return that;
 };
