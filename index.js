@@ -207,18 +207,34 @@ Netmsg.prototype._processData = function (socket, data) {
                 msgdata.mode = SocketDataMode.BINARY;
 
                 if (msgdata.binaryDef['mode'] === BinaryType.FILE) {
-                    msgdata.binaryFilePath = Tmp.fileSync({}).name;
+                    var tmpFile = Tmp.fileSync({});
+                    var canFinish = true;
+                    
+                    msgdata.binaryFilePath = tmpFile.name;
                     msgdata.binaryFileStream = Fs.createWriteStream(msgdata.binaryFilePath);
                     msgdata.binaryWrittenBytes = 0;
 
                     message.holdingUntilSend++;
-                    msgdata.binaryFileStream.on('finish', function () {
-                        message.holdingUntilSend--;
-                        if (!message.holdingUntilSend) {
-                            //noinspection JSAccessibilityCheck
-                            that._tryReleaseIncomingMessageQueue(socket);
-                        }
-                    });
+                    msgdata.binaryFileStream
+                        .once('error', function () {
+                            canFinish = false;
+                        })
+                        .once('finish', function () {
+
+                            if (canFinish) {
+                                // Close Tmp file descriptor
+                                Fs.closeSync(tmpFile.fd);
+                            }
+
+                            // Close stream
+                            this.close();
+
+                            message.holdingUntilSend--;
+                            if (!message.holdingUntilSend) {
+                                //noinspection JSAccessibilityCheck
+                                that._tryReleaseIncomingMessageQueue(socket);
+                            }
+                        });
                 } else {
                     msgdata.binaryBuffer = new Buffer(msgdata.binaryLength);
                     msgdata.binaryWrittenBytes = 0;
@@ -420,6 +436,7 @@ Netmsg.prototype._tryReleaseOutgoingMessageQueue = function (socket) {
                             .on('error', function (err) {
                                 that.emit('error', err);
                                 socket.destroy();
+                                this.close();
                             })
                             .on('end', function () {
                                 message.holdingUntilSendComplete--;
@@ -427,6 +444,7 @@ Netmsg.prototype._tryReleaseOutgoingMessageQueue = function (socket) {
                                 delete message.pendingOutgoingFile;
                                 //noinspection JSAccessibilityCheck
                                 that._tryReleaseOutgoingMessageQueue(socket);
+                                this.close();
                             });
                 }
             });
