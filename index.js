@@ -797,7 +797,7 @@ Netmsg.prototype.disconnectAll = function () {
 
     var that = this;
 
-    var sockets = that._sockets.slice(0);
+    var sockets = that.getAllSockets();
 
     for (var i = 0; i < sockets.length; i++) {
         sockets[i].destroy();
@@ -805,6 +805,16 @@ Netmsg.prototype.disconnectAll = function () {
     }
 
     return that;
+};
+
+//noinspection JSUnusedGlobalSymbols
+/**
+ * Retrieve and array of all sockets.
+ * The array is *not* a reference to an internal array.
+ * @returns {Array.<Socket>}
+ */
+Netmsg.prototype.getAllSockets = function () {
+    return this._sockets.slice(0);
 };
 
 /** @type {Netmsg} */
