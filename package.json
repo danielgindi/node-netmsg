@@ -1,6 +1,6 @@
 {
   "name": "netmsg",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Simple message transfer over network between Node.js, with Buffer and file support",
   "main": "index.js",
   "scripts": {
