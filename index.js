@@ -156,7 +156,7 @@ Netmsg.prototype._processData = function (socket, data) {
         case SocketDataMode.MESSAGE:
 
             if (data) {
-                msgdata.buffer = Buffer.concat([msgdata.buffer, 'binary']);
+                msgdata.buffer = Buffer.concat([msgdata.buffer, data]);
             }
 
             if (msgdata.buffer.length >= msgdata.messageLength) {
@@ -195,7 +195,7 @@ Netmsg.prototype._processData = function (socket, data) {
         case SocketDataMode.BINARY_LENGTH:
 
             if (data) {
-                msgdata.buffer = Buffer.concat([msgdata.buffer, 'binary']);
+                msgdata.buffer = Buffer.concat([msgdata.buffer, data]);
             }
 
             if (msgdata.buffer.length >= 4) {
