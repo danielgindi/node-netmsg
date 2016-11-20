@@ -171,7 +171,7 @@ Netmsg.prototype._processData = function (socket, data) {
                     if (message['binaries'] && message['binaries'].length) {
                         // We have binaries to wait for
                         msgdata.pendingMessage = message;
-                        message.holdingUntilSend = message['binaries'].length;
+                        message.holdingUntilGetComplete = message['binaries'].length;
                         msgdata.pendingMessage.files = {};
                         msgdata.mode = SocketDataMode.BINARY_LENGTH;
                     } else {
@@ -209,12 +209,12 @@ Netmsg.prototype._processData = function (socket, data) {
                 if (msgdata.binaryDef['mode'] === BinaryType.FILE) {
                     var tmpFile = Tmp.fileSync({});
                     var canFinish = true;
-                    
+
                     msgdata.binaryFilePath = tmpFile.name;
                     msgdata.binaryFileStream = Fs.createWriteStream(msgdata.binaryFilePath);
                     msgdata.binaryWrittenBytes = 0;
 
-                    message.holdingUntilSend++;
+                    message.holdingUntilGetComplete++;
                     msgdata.binaryFileStream
                         .once('error', function () {
                             canFinish = false;
@@ -229,8 +229,8 @@ Netmsg.prototype._processData = function (socket, data) {
                             // Close stream
                             this.close();
 
-                            message.holdingUntilSend--;
-                            if (!message.holdingUntilSend) {
+                            message.holdingUntilGetComplete--;
+                            if (!message.holdingUntilGetComplete) {
                                 //noinspection JSAccessibilityCheck
                                 that._tryReleaseIncomingMessageQueue(socket);
                             }
@@ -278,7 +278,7 @@ Netmsg.prototype._processData = function (socket, data) {
 
             if (msgdata.binaryWrittenBytes === msgdata.binaryLength) {
                 message = msgdata.pendingMessage;
-                message.holdingUntilSend--;
+                message.holdingUntilGetComplete--;
 
                 if (binaryDef['mode'] === BinaryType.FILE) {
                     msgdata.pendingMessage.files[binaryDef['key']] = {
@@ -346,7 +346,7 @@ Netmsg.prototype._tryReleaseIncomingMessageQueue = function (socket) {
     var that = this;
     var msgdata = socket.__msgdata;
 
-    while (msgdata.incomingMessages.length && !msgdata.incomingMessages[0].holdingUntilSend) {
+    while (msgdata.incomingMessages.length && !msgdata.incomingMessages[0].holdingUntilGetComplete) {
         var message = msgdata.incomingMessages.shift();
 
         that.emit('message', {
