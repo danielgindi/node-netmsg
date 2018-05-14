@@ -236,7 +236,7 @@ Netmsg.prototype._processData = function (socket, data) {
                             }
                         });
                 } else {
-                    msgdata.binaryBuffer = new Buffer(msgdata.binaryLength);
+                    msgdata.binaryBuffer = Buffer.alloc(msgdata.binaryLength);
                     msgdata.binaryWrittenBytes = 0;
                 }
 
@@ -263,7 +263,7 @@ Netmsg.prototype._processData = function (socket, data) {
                         msgdata.buffer.copy(msgdata.binaryBuffer, msgdata.binaryWrittenBytes, 0, msgdata.buffer.length);
                     }
                     msgdata.binaryWrittenBytes += msgdata.buffer.length;
-                    msgdata.buffer = new Buffer(0);
+                    msgdata.buffer = Buffer.alloc(0);
                 } else {
                     var bytesToWrite = Math.min(msgdata.binaryLength - msgdata.binaryWrittenBytes, msgdata.buffer.length);
                     if (binaryDef['mode'] === BinaryType.FILE) {
@@ -418,7 +418,7 @@ Netmsg.prototype._tryReleaseOutgoingMessageQueue = function (socket) {
                 var fileLength = (stat || {}).size || 0;
 
                 if (socket.writable) {
-                    var lengthBuffer = new Buffer(4);
+                    var lengthBuffer = Buffer.allocUnsafe(4);
                     lengthBuffer.writeUInt32LE(fileLength, 0);
                     socket.write(lengthBuffer);
                     if (fileLength <= 0) return;
@@ -462,8 +462,8 @@ Netmsg.prototype._tryReleaseOutgoingMessageQueue = function (socket) {
 
     message.sending = true;
 
-    var buffer = new Buffer(JSON.stringify(message.message));
-    var lengthBuffer = new Buffer(4);
+    var buffer = Buffer.from(JSON.stringify(message.message));
+    var lengthBuffer = Buffer.allocUnsafe(4);
     lengthBuffer.writeUInt32LE(buffer.length, 0);
     socket.write(lengthBuffer);
     socket.write(buffer);
@@ -629,7 +629,7 @@ Netmsg.prototype.listenOnSocket = function (socket) {
     that.stopListeningOnSocket(socket);
 
     socket.__msgdata = {
-        buffer: new Buffer(0)
+        buffer: Buffer.alloc(0)
         , mode: SocketDataMode.PENDING
         , incomingMessages: []
         , outgoingMessages: []
