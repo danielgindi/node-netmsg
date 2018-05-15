@@ -548,10 +548,14 @@ class Netmsg extends EventEmitter {
             this.emit('connect', socket);
         });
 
-        server.on('error', err => {
-            // Forward errors
-            this.emit('error', err);
-        });
+        server
+            .on('error', err => {
+                // Forward errors
+                this.emit('error', err);
+            })
+            .on('listening', () => {
+                this.emit('listening');
+            });
 
         this._listenerServers.push(server);
 
