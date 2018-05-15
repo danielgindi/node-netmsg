@@ -542,6 +542,8 @@ class Netmsg extends EventEmitter {
      * @returns {Netmsg}
      */
     listen(options) {
+        this.stopServer();
+
         let server = Net.createServer(socket => {
             this.listenOnSocket(socket);
 
@@ -557,9 +559,26 @@ class Netmsg extends EventEmitter {
                 this.emit('listening');
             });
 
-        this._listenerServers.push(server);
+        this._listenerServer = server;
 
         server.listen(options);
+
+        return this;
+    }
+
+    /**
+     * Stop listening
+     * @param {function?} callback
+     * @return {Netmsg}
+     */
+    stopServer(callback) {
+        if (!this._listenerServer) {
+            callback && callback(new Error('The Netmsg instance was not listening'));
+            return this;
+        }
+
+        this._listenerServer.close(callback);
+        this._listenerServer = null;
 
         return this;
     }
