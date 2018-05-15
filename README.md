@@ -54,6 +54,7 @@ client.on('message', function (event) {
 * Call `listen(options)` to start a server
 * Call `connect(options)` to connect to a server
 * Call `stopListeningOnSocket(socket)` to remove a specific socket from this instance
+* Call `stopServer(callback)` to stop the listening server
 * Call `disconnectClient()` to disconnect from the remote server, after calling `connect`
 * Call `disconnectAll()` to disconnect all sockets, including server sockets and the client socket.
 * Events that are emitted are: 'connect', 'disconnect', 'message', 'error'
