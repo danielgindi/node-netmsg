@@ -4,7 +4,7 @@
   "description": "Simple message transfer over network between Node.js, with Buffer and file support",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha ./tests/**/*test.js"
   },
   "repository": {
     "type": "git",
@@ -24,5 +24,8 @@
   "homepage": "https://github.com/danielgindi/node-netmsg",
   "dependencies": {
     "tmp": "^0.0.33"
+  },
+  "devDependencies": {
+    "mocha": "^5.1.1"
   }
 }
