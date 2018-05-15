@@ -23,6 +23,6 @@
   },
   "homepage": "https://github.com/danielgindi/node-netmsg",
   "dependencies": {
-    "tmp": "0.0.28"
+    "tmp": "^0.0.33"
   }
 }

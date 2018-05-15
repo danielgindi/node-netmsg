@@ -16,7 +16,7 @@ npm install --save netmsg
 
 const Netmsg = require('netmsg');
 
-var server = new Netmsg().listen({ host: '0.0.0.0', port: 1974 });
+let server = new Netmsg().listen({ host: '0.0.0.0', port: 1974 });
 
 server.on('message', function (event) {
     console.log(event.message); // --> { "note": "this message has a file attached to it" }
@@ -29,7 +29,7 @@ server.on('message', function (event) {
 });
 
 
-var client = new Netmsg().connect({ host: '10.0.0.27', port: 1974 });
+let client = new Netmsg().connect({ host: '10.0.0.27', port: 1974 });
 client.on('connect', function () {
     client.sendMessage({
         'note': 'this message has a file attached to it'
@@ -41,7 +41,7 @@ client.on('connect', function () {
     })
 });
 client.on('message', function (event) {
-    console.log(event.message); --> { "some_data": "that I have to send", "my_buffer": <Buffer 23 73 a0 bf> }
+    console.log(event.message); // --> { "some_data": "that I have to send", "my_buffer": <Buffer 23 73 a0 bf> }
 });
 
 ```
