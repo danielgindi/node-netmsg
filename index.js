@@ -14,7 +14,7 @@ const SocketDataMode = {
     PENDING: 0,
     MESSAGE: 1,
     BINARY_LENGTH: 2,
-    BINARY: 3
+    BINARY: 3,
 };
 
 /**
@@ -22,7 +22,7 @@ const SocketDataMode = {
  */
 const BinaryType = {
     BUFFER: 'b',
-    FILE: 'f'
+    FILE: 'f',
 };
 
 const copyMessageExtractingBuffers = function (message, parentKey, buffers) {
@@ -47,7 +47,7 @@ const copyMessageExtractingBuffers = function (message, parentKey, buffers) {
         if (val instanceof Buffer) {
             buffers.push({
                 key: (parentKey != null ? parentKey + '.' : '') + key.replace(/\\/g, '\\\\').replace(/\./g, '\\.')
-                , buffer: val
+                , buffer: val,
             });
         } else if (val && (Array.isArray(val) || typeof val === 'object')) {
             out[key] = copyMessageExtractingBuffers(
@@ -218,7 +218,7 @@ class Netmsg extends EventEmitter {
 
                 break;
 
-            case SocketDataMode.BINARY:
+            case SocketDataMode.BINARY: {
 
                 if (data) {
                     msgdata.buffer = Buffer.concat([msgdata.buffer, data]);
@@ -231,20 +231,25 @@ class Netmsg extends EventEmitter {
                     if (msgdata.binaryWrittenBytes + msgdata.buffer.length <= msgdata.binaryLength) {
                         if (binaryDef['mode'] === BinaryType.FILE) {
                             msgdata.binaryFileStream.write(msgdata.buffer);
-                        } else {
-                            msgdata.buffer.copy(msgdata.binaryBuffer, msgdata.binaryWrittenBytes, 0, msgdata.buffer.length);
+                        }
+                        else {
+                            msgdata.buffer.copy(msgdata.binaryBuffer, msgdata.binaryWrittenBytes, 0,
+                                msgdata.buffer.length);
                         }
                         msgdata.binaryWrittenBytes += msgdata.buffer.length;
                         msgdata.buffer = Buffer.alloc(0);
-                    } else {
-                        let bytesToWrite = Math.min(msgdata.binaryLength - msgdata.binaryWrittenBytes, msgdata.buffer.length);
+                    }
+                    else {
+                        let bytesToWrite = Math.min(msgdata.binaryLength - msgdata.binaryWrittenBytes,
+                            msgdata.buffer.length);
                         if (binaryDef['mode'] === BinaryType.FILE) {
                             msgdata.binaryFileStream.write(msgdata.buffer.slice(0, bytesToWrite));
-                        } else {
+                        }
+                        else {
                             msgdata.buffer.copy(msgdata.binaryBuffer, msgdata.binaryWrittenBytes, 0, bytesToWrite);
                         }
                         msgdata.binaryWrittenBytes += bytesToWrite;
-                        msgdata.buffer = msgdata.buffer.slice(bytesToWrite)
+                        msgdata.buffer = msgdata.buffer.slice(bytesToWrite);
                     }
                 }
 
@@ -255,10 +260,11 @@ class Netmsg extends EventEmitter {
                     if (binaryDef['mode'] === BinaryType.FILE) {
                         msgdata.pendingMessage.files[binaryDef['key']] = {
                             'path': msgdata.binaryFilePath,
-                            'name': binaryDef['name']
+                            'name': binaryDef['name'],
                         };
                         msgdata.binaryFileStream.end();
-                    } else {
+                    }
+                    else {
                         let whereToPut = msgdata.pendingMessage.message;
                         let binaryKey = splitEscapedKeys(binaryDef['key']);
                         for (let i = 0; i < binaryKey.length - 1; i++) {
@@ -269,7 +275,8 @@ class Netmsg extends EventEmitter {
 
                     if (message['binaries'].length) {
                         msgdata.mode = SocketDataMode.BINARY_LENGTH;
-                    } else {
+                    }
+                    else {
                         msgdata.mode = SocketDataMode.PENDING;
                         delete msgdata.pendingMessage;
                     }
@@ -287,7 +294,7 @@ class Netmsg extends EventEmitter {
                 }
 
                 break;
-
+            }
         }
 
     }
@@ -322,7 +329,7 @@ class Netmsg extends EventEmitter {
             this.emit('message', {
                 message: message['message']
                 , files: message['files']
-                , socket: socket
+                , socket: socket,
             });
         }
 
@@ -346,7 +353,7 @@ class Netmsg extends EventEmitter {
             buffers: buffers,
             files: files,
             sending: false,
-            holdingUntilSendComplete: buffers.length + files.length
+            holdingUntilSendComplete: buffers.length + files.length,
         });
 
         return this._tryReleaseOutgoingMessageQueue(socket);
@@ -485,7 +492,7 @@ class Netmsg extends EventEmitter {
         for (let i = 0; i < buffersArray.length; i++) {
             binaries.push({
                 'mode': BinaryType.BUFFER
-                , 'key': buffersArray[i].key
+                , 'key': buffersArray[i].key,
             });
             buffersArray[i] = buffersArray[i].buffer;
         }
@@ -498,7 +505,7 @@ class Netmsg extends EventEmitter {
                 binaries.push({
                     'mode': BinaryType.FILE
                     , 'key': key
-                    , 'name': file['name']
+                    , 'name': file['name'],
                 });
                 filesArray.push(file['path']);
             }
@@ -509,7 +516,7 @@ class Netmsg extends EventEmitter {
                 socket,
                 {
                     'message': message,
-                    'binaries': binaries.length ? binaries : false
+                    'binaries': binaries.length ? binaries : false,
                 },
                 buffersArray,
                 filesArray
@@ -520,7 +527,7 @@ class Netmsg extends EventEmitter {
                     socket,
                     {
                         'message': message,
-                        'binaries': binaries ? binaries : false
+                        'binaries': binaries ? binaries : false,
                     },
                     buffersArray,
                     filesArray
@@ -629,7 +636,7 @@ class Netmsg extends EventEmitter {
 
             onEnd: ()  => {
                 // Graceful shutdown from the other end
-            }
+            },
         };
 
         socket[DATA_SYMBOL] = {
@@ -637,7 +644,7 @@ class Netmsg extends EventEmitter {
             , mode: SocketDataMode.PENDING
             , incomingMessages: []
             , outgoingMessages: []
-            , events: events
+            , events: events,
         };
 
         this._sockets.push(socket);
